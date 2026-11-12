@@ -1,6 +1,6 @@
 (() => {
     const script = document.createElement("script");
-    const url = new URL("browse/pics/playback-launchers.js?v=3", document.currentScript.src).href;
+    const url = new URL("browse/pics/playback-launchers.js?v=4", document.currentScript.src).href;
     const policy = window.trustedTypes?.createPolicy("playback-service-launchers", {
         createScriptURL(candidate) {
             if (candidate !== url) {
