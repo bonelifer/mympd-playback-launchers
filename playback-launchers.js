@@ -6,7 +6,7 @@
 
     const row = document.createElement("div");
     row.id = "playback-service-launchers";
-    row.className = "d-flex flex-wrap";
+    row.className = "d-flex flex-wrap d-none";
     row.setAttribute("role", "group");
     row.setAttribute("aria-label", "Music service pickers");
     title.after(row);
@@ -17,6 +17,7 @@
         ["iHeartRadio", "iHeartRadio Favorites", "iheart-radio-cc0.png"]
     ];
     const assetBase = new URL("thumbs/", document.currentScript.src);
+    const buttons = new Map();
     for (const [label, script, image] of services) {
         const button = document.createElement("button");
         button.type = "button";
@@ -27,9 +28,10 @@
         icon.width = 24;
         icon.height = 24;
         icon.className = "me-2";
+        icon.addEventListener("error", () => icon.remove(), {once: true});
         button.append(icon, label);
         button.addEventListener("click", () => execScriptFromOptions(script, [""]));
-        row.append(button);
+        buttons.set(script, button);
     }
 
     function renderRadioMetadata() {
@@ -89,21 +91,37 @@
     }
     renderRadioMetadata();
 
-    // These two picker scripts may load before or after this toolbar.
-    const observer = new MutationObserver(moveExistingPickers);
-    function moveExistingPickers() {
-        const soma = document.getElementById("somafm-picker");
-        const ib = document.getElementById("ibroadcast-picker");
-        if (soma && soma.parentNode !== row) {
-            row.append(soma);
+    let installed = new Set();
+    const observer = new MutationObserver(updateButtons);
+
+    function updateButtons() {
+        const candidates = [
+            ...buttons,
+            ["SomaFM", document.getElementById("somafm-picker")],
+            ["iBroadcast", document.getElementById("ibroadcast-picker")]
+        ];
+        let previous = null;
+        for (const [script, button] of candidates) {
+            if (!button) continue;
+            const available = installed.has(script);
+            button.classList.toggle("d-none", !available);
+            if (available) {
+                const next = previous ? previous.nextElementSibling : row.firstElementChild;
+                if (next !== button) row.insertBefore(button, next);
+                previous = button;
+            }
         }
-        if (ib && (ib.parentNode !== row || (soma && ib.previousElementSibling !== soma))) {
-            row.append(ib);
-        }
-        if (soma && ib) {
-            observer.disconnect();
-        }
+        row.classList.toggle("d-none", previous === null);
     }
+
+    // SomaFM and iBroadcast add their own buttons and may load asynchronously.
     observer.observe(title.parentNode, {childList: true});
-    moveExistingPickers();
+    updateButtons();
+    sendAPI("MYMPD_API_SCRIPT_LIST", {all: true}, response => {
+        const scripts = response.result?.data;
+        if (Array.isArray(scripts)) {
+            installed = new Set(scripts.map(script => script.name));
+            updateButtons();
+        }
+    }, false);
 })();
