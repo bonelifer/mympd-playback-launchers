@@ -9,9 +9,15 @@ The row shows only installed pickers. For SomaFM and iBroadcast, also
 install their Playback scripts from their respective repositories.
 Refresh myMPD after installing or removing a picker.
 
-1. Copy `playback-launchers.js` into myMPD's `pics/` directory.
-2. Append `playback-launchers-loader.js` to `config/custom_js` once.
-3. Restart myMPD and refresh the Playback page.
+Run the installer with write access to myMPD's work directory:
+
+```sh
+python3 install-playback.py --workdir /path/to/mympd/workdir
+```
+
+It copies the browser script into `pics/` and adds or updates its loader
+in the existing custom JavaScript file. Restart myMPD and refresh the
+Playback page. Run the same command to update an existing installation.
 
 ## Contributing
 
